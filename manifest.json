@@ -1,0 +1,25 @@
+{
+  "name": "Qarz Daftarcha",
+  "short_name": "Qarz Daftarcha",
+  "description": "Mijozlar qarzini kuzatish uchun oddiy va qulay ilova / Простое приложение для учёта долгов клиентов",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#2F6FED",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>Qarz Daftarcha</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="theme-color" content="#2F6FED" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Qarz Daftarcha" />
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --bg: #FFFFFF;
+    --text: #0F172A;
+    --muted: #64748B;
+    --muted2: #94A3B8;
+    --card-bg: #FFFFFF;
+    --card-border: #F1F5F9;
+    --input-bg: #FFFFFF;
+    --input-border: #E2E8F0;
+    --search-bg: #F8FAFC;
+    --total-bg: #F8FAFC;
+    --divider: #E2E8F0;
+    --alert-bg: #FEF2F2;
+    --alert-border: #FECACA;
+    --alert-strong: #B91C1C;
+    --alert-soft: #7F1D1D;
+    --avatar-bg: #DBEAFE;
+    --safe-top: 0px;
+    --safe-bottom: 0px;
+  }
+  body.dark {
+    --bg: #0B1220;
+    --text: #F1F5F9;
+    --muted: #94A3B8;
+    --muted2: #64748B;
+    --card-bg: #1E293B;
+    --card-border: #334155;
+    --input-bg: #0F172A;
+    --input-border: #334155;
+    --search-bg: #1E293B;
+    --total-bg: #0F172A;
+    --divider: #334155;
+    --alert-bg: #45090C;
+    --alert-border: #7F1D1D;
+    --alert-strong: #FCA5A5;
+    --alert-soft: #FECACA;
+    --avatar-bg: #1E3A5F;
+  }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-tap-highlight-color: transparent;
+    transition: background .2s ease, color .2s ease;
+  }
+  #app { max-width: 480px; margin: 0 auto; min-height: 100vh; position: relative; padding-top: var(--safe-top); }
+
+  @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+  @keyframes pulseSoft { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.35); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .card { animation: slideIn .35s ease both; transition: transform .18s ease, box-shadow .18s ease, background .2s ease, border-color .2s ease;
+    background:var(--card-bg); border:1px solid var(--card-border); border-radius:16px; padding:13px 14px; margin-bottom:10px;
+    box-shadow:0 1px 3px rgba(15,23,42,.04); }
+  .card:active { transform: scale(.99); }
+  .card.paid { opacity: .7; }
+  .btn { transition: background .15s ease, transform .12s ease, box-shadow .15s ease; cursor:pointer; border:none; font-family:inherit; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(0) scale(.97); }
+  .btn:disabled { opacity: .6; cursor: default; transform:none !important; }
+  .modal-wrap { animation: popIn .25s cubic-bezier(.2,.9,.3,1.2) both; }
+  .pulse { animation: pulseSoft 1.8s ease-in-out infinite; }
+  .chevron { transition: transform .2s ease; }
+  input, select { transition: border-color .15s ease, box-shadow .15s ease; font-family: inherit; }
+  input:focus { outline:none; border-color:#2F6FED; box-shadow:0 0 0 3px rgba(47,111,237,.15); }
+  .hole { width:7px; height:7px; border-radius:50%; background:var(--divider); }
+  .spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation: spin .7s linear infinite; display:inline-block; }
+
+  .header { display:flex; align-items:center; gap:10px; padding:18px 14px 12px; border-bottom:1px solid var(--card-border); }
+  .app-logo { width:34px; height:34px; border-radius:10px; flex-shrink:0; background:linear-gradient(135deg,#3A6EED,#1747B0); display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(47,111,237,.35); }
+  .spiral { display:flex; flex-direction:column; gap:3px; }
+  .alert-box { margin:10px 14px 0; background:var(--alert-bg); border:1px solid var(--alert-border); border-radius:14px; padding:10px 12px; }
+  .stats-bar { margin:12px 14px 0; background:linear-gradient(135deg,#2F6FED,#1E4FBF); border-radius:16px; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 6px 18px rgba(47,111,237,.25); }
+  .search-wrap { display:flex; align-items:center; gap:8px; margin:14px 14px 10px; background:var(--search-bg); border:1px solid var(--input-border); border-radius:12px; padding:9px 12px; }
+  .search-wrap input { border:none; outline:none; background:transparent; font-size:13.5px; flex:1; color:var(--text); }
+  .filter-tabs { display:flex; gap:6px; margin:0 14px 6px; }
+  .filter-tab { flex:1; text-align:center; font-size:12.5px; font-weight:700; padding:8px 0; border-radius:10px; background:var(--search-bg); color:var(--muted); cursor:pointer; border:none; }
+  .filter-tab.active { background:#2F6FED; color:#fff; }
+  .list { padding: 4px 14px 100px; }
+  .item-row { display:flex; justify-content:space-between; font-size:13px; padding:3px 0; }
+  .pay-btn { flex:1; background:#2F6FED; color:#fff; border-radius:10px; padding:9px 0; font-size:13px; font-weight:700; }
+  .delete-btn { background:#FEF2F2; color:#DC2626; border-radius:10px; padding:9px 12px; font-size:12.5px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:4px; }
+  body.dark .delete-btn { background:#450A0A; color:#FCA5A5; }
+  .small-blue { background:#2F6FED; color:#fff; border-radius:10px; width:38px; display:flex; align-items:center; justify-content:center; }
+  .small-gray { background:var(--search-bg); color:var(--muted); border-radius:10px; width:38px; }
+  .quick-actions { display:flex; gap:6px; }
+  .quick-action { width:30px; height:30px; border-radius:9px; background:var(--search-bg); color:var(--muted); display:flex; align-items:center; justify-content:center; text-decoration:none; flex-shrink:0; }
+  .overlay { position:fixed; inset:0; background:rgba(15,23,42,.5); display:flex; align-items:flex-end; justify-content:center; z-index:50; }
+  .modal { background:var(--card-bg); width:100%; max-width:480px; border-radius:20px 20px 0 0; padding:18px 18px calc(16px + var(--safe-bottom)); max-height:88vh; display:flex; flex-direction:column; }
+  .form-scroll { overflow-y:auto; padding-bottom:6px; }
+  .label { font-size:12px; font-weight:700; color:var(--muted); margin:10px 0 5px; display:block; }
+  .form-input { width:100%; background:var(--input-bg); color:var(--text); border:1px solid var(--input-border); border-radius:10px; padding:9px 11px; font-size:13.5px; margin-bottom:4px; box-sizing:border-box; }
+  .add-row-btn { background:#EFF6FF; color:#1E4FBF; border-radius:10px; padding:7px 12px; font-size:12.5px; font-weight:700; display:flex; align-items:center; gap:4px; margin-top:2px; }
+  body.dark .add-row-btn { background:rgba(47,111,237,.18); color:#93C5FD; }
+  .total-box { display:flex; justify-content:space-between; align-items:center; background:var(--total-bg); border-radius:12px; padding:10px 14px; margin-top:14px; }
+  .submit-btn { background:#2F6FED; color:#fff; border-radius:12px; padding:13px 0; font-size:14.5px; font-weight:700; margin-top:14px; box-shadow:0 6px 16px rgba(47,111,237,.3); width:100%; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:#0F172A; color:#fff; padding:10px 18px; border-radius:10px; font-size:13px; animation:toastIn .25s ease both; z-index:60; max-width:90%; text-align:center; }
+  .badge { font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:20px; display:inline-flex; align-items:center; gap:3px; }
+  .empty { text-align:center; color:var(--muted2); margin-top:40px; font-size:14px; }
+  .loading-wrap { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px; color:var(--muted2); gap:12px; }
+  .big-spinner { width:28px; height:28px; border:3px solid var(--divider); border-top-color:#2F6FED; border-radius:50%; animation: spin .8s linear infinite; }
+  h1,p { margin:0; }
+
+  .avatar { width:40px; height:40px; border-radius:12px; object-fit:cover; flex-shrink:0; }
+  .avatar-fallback { width:40px; height:40px; border-radius:12px; background:var(--avatar-bg); color:#1E4FBF; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; flex-shrink:0; }
+  body.dark .avatar-fallback { color:#93C5FD; }
+
+  .bottom-nav { position:fixed; bottom:calc(14px + var(--safe-bottom)); left:50%; transform:translateX(-50%); width:calc(100% - 28px); max-width:452px;
+    background:var(--card-bg); border:1px solid var(--card-border); border-radius:28px; box-shadow:0 8px 24px rgba(15,23,42,.15);
+    display:flex; align-items:center; justify-content:space-around; padding:8px 10px; z-index:45; }
+  .nav-item { display:flex; flex-direction:column; align-items:center; gap:2px; background:none; border:none; color:var(--muted2); font-size:10.5px; padding:7px 16px; border-radius:16px; cursor:pointer; }
+  .nav-item.active { color:#2F6FED; background:#EFF6FF; }
+  body.dark .nav-item.active { color:#93C5FD; background:rgba(47,111,237,.18); }
+  .nav-fab { width:50px; height:50px; border-radius:50%; background:#2F6FED; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 16px rgba(47,111,237,.4); border:none; margin-top:-24px; cursor:pointer; transition: transform .12s ease; }
+  .nav-fab:active { transform: scale(.93); }
+
+  .settings-row { background:var(--card-bg); border:1px solid var(--card-border); border-radius:14px; padding:14px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
+  .switch { width:44px; height:26px; border-radius:20px; background:#CBD5E1; position:relative; border:none; cursor:pointer; transition:background .2s ease; flex-shrink:0; }
+  .switch.on { background:#2F6FED; }
+  .switch .knob { position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:left .2s ease; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+  .switch.on .knob { left:21px; }
+  .photo-picker-label { display:flex; align-items:center; gap:5px; }
+  .lang-switch { display:flex; background:var(--search-bg); border-radius:10px; padding:3px; gap:3px; }
+  .lang-opt { padding:6px 14px; border-radius:8px; font-size:12.5px; font-weight:700; color:var(--muted); background:none; border:none; cursor:pointer; }
+  .lang-opt.active { background:#2F6FED; color:#fff; }
+  .payment-row { display:flex; justify-content:space-between; font-size:12.5px; padding:3px 0; color:var(--muted); }
+  .camera-modal { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.92); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px; }
+  .camera-video { width:min(100%,520px); max-height:70vh; object-fit:cover; border-radius:16px; background:#111; }
+  .camera-actions { display:flex; gap:10px; margin-top:14px; }
+  .camera-actions button { min-width:120px; }
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+"use strict";
+
+// ---- Local storage (on-device) ----
+var STORE_KEY = "qarzDaftarchaCustomers";
+
+var BLUE = "#2F6FED", BLUE_DARK = "#1E4FBF";
+
+var state = {
+  view: "list",
+  theme: localStorage.getItem("qd_theme") || "light",
+  lang: localStorage.getItem("qd_lang") || "uz",
+  filter: "all",
+  reminderDays: Number(localStorage.getItem("qd_reminderDays")) || 0,
+  customers: [],
+  loading: true,
+  loadError: null,
+  showForm: false,
+  saving: false,
+  search: "",
+  payingId: null,
+  payAmount: "",
+  expandedId: null,
+  toast: null,
+  fName: "",
+  fPhone: "",
+  fDue: "",
+  fPhoto: null,
+  formItems: [],
+  deferredPrompt: null,
+  showInstallBanner: false
+};
+
+document.body.classList.toggle("dark", state.theme === "dark");
+
+// ---- Telegram Mini App integration ----
+var tg = window.Telegram && window.Telegram.WebApp;
+
+function applyChromeColors() {
+  var isDark = state.theme === "dark";
+  if (tg) {
+    try { tg.setHeaderColor(isDark ? "#0B1220" : "#2F6FED"); } catch (e) {}
+    try { tg.setBackgroundColor(isDark ? "#0B1220" : "#FFFFFF"); } catch (e) {}
+    try { tg.setBottomBarColor(isDark ? "#0B1220" : "#FFFFFF"); } catch (e) {}
+  }
+}
+
+function applySafeArea() {
+  if (!tg) return;
+  var sa = tg.safeAreaInset || {};
+  var csa = tg.contentSafeAreaInset || {};
+  var top = Math.max(sa.top || 0, csa.top || 0);
+  var bottom = Math.max(sa.bottom || 0, csa.bottom || 0);
+  document.documentElement.style.setProperty("--safe-top", top + "px");
+  document.documentElement.style.setProperty("--safe-bottom", bottom + "px");
+}
+
+function syncTelegramUI() {
+  if (!tg) return;
+  // Back button: shown whenever the user is somewhere other than the main list
+  var showBack = state.view === "settings" || state.showForm || state.payingId;
+  if (showBack) tg.BackButton.show(); else tg.BackButton.hide();
+
+  // Main button: quick "add debt" on the list view, becomes "Save" while the form is open
+  if (state.showForm) {
+    tg.MainButton.setParams({
+      text: state.saving ? t("savingBtn") : t("saveDebtBtn"),
+      color: "#2F6FED",
+      text_color: "#FFFFFF",
+      is_active: !state.saving,
+      is_visible: true
+    });
+    if (state.saving) tg.MainButton.showProgress(false); else tg.MainButton.hideProgress();
+  } else if (state.view === "list" && !state.payingId) {
+    tg.MainButton.setParams({ text: t("newDebtTitle"), color: "#2F6FED", text_color: "#FFFFFF", is_active: true, is_visible: true });
+    tg.MainButton.hideProgress();
+  } else {
+    tg.MainButton.hide();
+  }
+}
+
+if (tg) {
+  tg.ready();
+  tg.expand();
+  if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+  applyChromeColors();
+  applySafeArea();
+
+  tg.onEvent("backButtonClicked", function () {
+    if (state.payingId) cancelPayment();
+    else if (state.showForm) closeForm();
+    else if (state.view === "settings") goList();
+  });
+  tg.onEvent("mainButtonClicked", function () {
+    if (state.showForm) submitForm();
+    else if (state.view === "list") openForm();
+  });
+  tg.onEvent("viewportChanged", applySafeArea);
+  tg.onEvent("themeChanged", applyChromeColors);
+}
+
+function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+function fmtMoney(n) { return new Intl.NumberFormat("uz-UZ").format(Math.round(n || 0)); }
+
+// ---- i18n ----
+var LANG = {
+  uz: {
+    appName: "Qarz Daftarcha", settingsTitle: "Sozlamalar",
+    customersCount: function(n){ return n + " mijoz"; }, debtorsCount: function(n){ return n + " qarzdor"; },
+    totalDebtLabel: "Umumiy qarz", alertTitle: function(n){ return "To'lov muddati keldi (" + n + ")"; },
+    searchPlaceholder: "Ism yoki telefon orqali qidirish...",
+    filterAll: "Hammasi", filterDebt: "Qarzdorlar", filterPaid: "To'langan",
+    emptyMsg: "Hozircha qarzdorlar yo'q.<br/>Yangi qarz qo'shish uchun pastdagi + tugmasini bosing.",
+    emptyFiltered: "Bu bo'limda hech kim yo'q.",
+    paidLabel: "To'langan", paidAmountLabel: function(n){ return fmtMoney(n) + " " + t("currency") + " to'landi"; },
+    purchasedItemsLabel: "Sotib olingan narsalar", totalLabel: "Jami",
+    paymentHistoryLabel: "To'lovlar tarixi",
+    acceptPaymentBtn: "To'lov qabul qilish", amountPlaceholder: "Summa", deleteBtn: "O'chirish",
+    callTitle: "Qo'ng'iroq qilish", messageTitle: "SMS yuborish",
+    newDebtTitle: "Yangi qarz", customerPhotoLabel: "Mijoz surati (ixtiyoriy)", takePhotoBtn: "Rasm qo'shish",
+    customerNameLabel: "Mijoz ismi", namePlaceholder: "Masalan: Aziz Karimov",
+    phoneLabel: "Telefon raqami", duedateLabel: "Qaytarish muddati",
+    itemsLabel: "Sotib olingan narsalar", itemNamePh: "Nomi", pricePh: "Narxi", qtyPh: "Soni",
+    addItemBtn: "Yana narsa qo'shish", totalSumLabel: "Jami summa",
+    saveDebtBtn: "Qarzni saqlash", savingBtn: "Saqlanmoqda...", currency: "so'm",
+    nightModeLabel: "Tungi rejim", languageLabel: "Til",
+    reminderLabel: "Necha kun oldin ogohlantirish", reminderPh: "Masalan: 3",
+    reminderHint: "Muddat tugashiga shuncha kun qolganda ilova tepasida ogohlantirish ko'rsatadi (0 — faqat bugun/kechikkanlarni ko'rsatadi)",
+    exportBtn: "Ma'lumotlarni yuklab olish (JSON)", clearPaidBtn: "To'langan yozuvlarni tozalash",
+    footerLabel: "Qarz Daftarcha · shaxsiy do'kon uchun",
+    navList: "Ro'yxat", navSettings: "Sozlama",
+    loadingMsg: "Ma'lumotlar yuklanmoqda...", loadErrorTitle: "Ma'lumotlarni yuklab bo'lmadi", retryBtn: "Qayta urinish",
+    confirmDeleteMsg: "Ushbu yozuvni o'chirmoqchimisiz?",
+    toastAdded: "Qarz qo'shildi", toastDeleted: "O'chirildi", toastPaymentAccepted: "To'lov qabul qilindi",
+    toastExported: "Fayl yuklandi", toastCleared: "Tozalandi", toastPhotoError: "Rasmni yuklab bo'lmadi",
+    alertNoName: "Iltimos, mijoz ismini kiriting", alertNoItems: "Kamida bitta mahsulot kiriting",
+    alertBadAmount: "To'g'ri summa kiriting", alertNoPaid: "To'langan yozuvlar yo'q",
+    confirmClearPaid: function(n){ return n + " ta to'langan yozuvni o'chirmoqchimisiz?"; },
+    todayBadge: "Bugun", overdueBadge: function(n){ return n + " kun kechikdi"; },
+    upcomingBadge: function(n){ return n + " kun qoldi"; }, noDueDate: "Muddat yo'q",
+    alertLineSuffix: function(status, dd){
+      if (status === "today") return "(bugun)";
+      if (status === "overdue") return "(" + Math.abs(dd) + " kun o'tgan)";
+      return "(" + dd + " kun qoldi)";
+    },
+    smsTemplate: function(name, amount){ return "Assalomu alaykum, " + name + "! Sizda " + fmtMoney(amount) + " " + t("currency") + " qarz mavjud. Iltimos, imkon qadar to'lang. Rahmat!"; }
+  },
+  ru: {
+    appName: "Qarz Daftarcha", settingsTitle: "Настройки",
+    customersCount: function(n){ return n + " клиентов"; }, debtorsCount: function(n){ return n + " должников"; },
+    totalDebtLabel: "Общий долг", alertTitle: function(n){ return "Подошёл срок оплаты (" + n + ")"; },
+    searchPlaceholder: "Поиск по имени или телефону...",
+    filterAll: "Все", filterDebt: "Должники", filterPaid: "Оплачено",
+    emptyMsg: "Пока должников нет.<br/>Нажмите + внизу, чтобы добавить новый долг.",
+    emptyFiltered: "В этом разделе никого нет.",
+    paidLabel: "Оплачено", paidAmountLabel: function(n){ return "оплачено " + fmtMoney(n) + " " + t("currency"); },
+    purchasedItemsLabel: "Приобретённые товары", totalLabel: "Итого",
+    paymentHistoryLabel: "История платежей",
+    acceptPaymentBtn: "Принять оплату", amountPlaceholder: "Сумма", deleteBtn: "Удалить",
+    callTitle: "Позвонить", messageTitle: "Отправить SMS",
+    newDebtTitle: "Новый долг", customerPhotoLabel: "Фото клиента (необязательно)", takePhotoBtn: "Добавить фото",
+    customerNameLabel: "Имя клиента", namePlaceholder: "Например: Азиз Каримов",
+    phoneLabel: "Номер телефона", duedateLabel: "Срок возврата",
+    itemsLabel: "Приобретённые товары", itemNamePh: "Название", pricePh: "Цена", qtyPh: "Кол-во",
+    addItemBtn: "Добавить товар", totalSumLabel: "Итоговая сумма",
+    saveDebtBtn: "Сохранить долг", savingBtn: "Сохранение...", currency: "сум",
+    nightModeLabel: "Тёмная тема", languageLabel: "Язык",
+    reminderLabel: "За сколько дней предупреждать", reminderPh: "Например: 3",
+    reminderHint: "Показывать предупреждение наверху, когда до срока остаётся столько дней (0 — только сегодня/просроченные)",
+    exportBtn: "Скачать данные (JSON)", clearPaidBtn: "Очистить оплаченные записи",
+    footerLabel: "Qarz Daftarcha · для личного магазина",
+    navList: "Список", navSettings: "Настройки",
+    loadingMsg: "Загрузка данных...", loadErrorTitle: "Не удалось загрузить данные", retryBtn: "Повторить",
+    confirmDeleteMsg: "Удалить эту запись?",
+    toastAdded: "Долг добавлен", toastDeleted: "Удалено", toastPaymentAccepted: "Платёж принят",
+    toastExported: "Файл скачан", toastCleared: "Очищено", toastPhotoError: "Не удалось загрузить фото",
+    alertNoName: "Пожалуйста, введите имя клиента", alertNoItems: "Добавьте хотя бы один товар",
+    alertBadAmount: "Введите корректную сумму", alertNoPaid: "Нет оплаченных записей",
+    confirmClearPaid: function(n){ return "Удалить " + n + " оплаченных записей?"; },
+    todayBadge: "Сегодня", overdueBadge: function(n){ return "просрочено на " + n + " дн."; },
+    upcomingBadge: function(n){ return "осталось " + n + " дн."; }, noDueDate: "Без срока",
+    alertLineSuffix: function(status, dd){
+      if (status === "today") return "(сегодня)";
+      if (status === "overdue") return "(просрочено на " + Math.abs(dd) + " дн.)";
+      return "(осталось " + dd + " дн.)";
+    },
+    smsTemplate: function(name, amount){ return "Здравствуйте, " + name + "! У вас есть долг " + fmtMoney(amount) + " " + t("currency") + ". Пожалуйста, оплатите при возможности. Спасибо!"; }
+  }
+};
+function t(key, arg) {
+  var dict = LANG[state.lang] || LANG.uz;
+  var v = dict[key];
+  if (typeof v === "function") return v(arg);
+  return v;
+}
+
+function fmtDate(d) {
+  if (!d) return "-";
+  var dt = new Date(d + "T00:00:00");
+  var monthsUz = ["Yan","Fev","Mar","Apr","May","Iyun","Iyul","Avg","Sen","Okt","Noy","Dek"];
+  var monthsRu = ["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"];
+  var months = state.lang === "ru" ? monthsRu : monthsUz;
+  return dt.getDate() + " " + months[dt.getMonth()] + ", " + dt.getFullYear();
+}
+function daysDiff(dueDate) {
+  var a = new Date(todayStr() + "T00:00:00");
+  var b = new Date(dueDate + "T00:00:00");
+  return Math.round((b - a) / 86400000);
+}
+
+function showToast(msg) {
+  state.toast = msg;
+  render();
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(function () { state.toast = null; render(); }, 2400);
+}
+
+function saveCustomers() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state.customers));
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+function loadCustomers() {
+  state.loading = true;
+  state.loadError = null;
+  try {
+    var stored = localStorage.getItem(STORE_KEY);
+    state.customers = stored ? JSON.parse(stored) : [];
+    state.loading = false;
+    render();
+  } catch (err) {
+    state.loading = false;
+    state.loadError = "Ma'lumotlarni o'qib bo'lmadi";
+    render();
+  }
+}
+
+function enrich(c) {
+  var total = c.items.reduce(function (s, it) { return s + Number(it.price) * Number(it.qty); }, 0);
+  var paid = (c.payments || []).reduce(function (s, p) { return s + Number(p.amount); }, 0);
+  var remaining = Math.max(total - paid, 0);
+  var isPaid = remaining <= 0;
+  var dd = c.dueDate ? daysDiff(c.dueDate) : null;
+  var status = "upcoming";
+  if (isPaid) status = "paid";
+  else if (dd !== null && dd < 0) status = "overdue";
+  else if (dd !== null && dd === 0) status = "today";
+  var out = Object.assign({}, c);
+  out.total = total; out.paid = paid; out.remaining = remaining; out.isPaid = isPaid; out.dd = dd; out.status = status;
+  return out;
+}
+
+function getFiltered() {
+  var enrichedList = state.customers.map(enrich);
+  var q = state.search.trim().toLowerCase();
+  var list = enrichedList;
+  if (q) {
+    list = list.filter(function (c) {
+      return c.name.toLowerCase().indexOf(q) !== -1 || (c.phone || "").indexOf(q) !== -1;
+    });
+  }
+  if (state.filter === "debt") list = list.filter(function (c) { return !c.isPaid; });
+  if (state.filter === "paid") list = list.filter(function (c) { return c.isPaid; });
+  var order = { overdue: 0, today: 1, upcoming: 2, paid: 3 };
+  return list.slice().sort(function (a, b) {
+    if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
+    if (a.dueDate && b.dueDate) return a.dueDate < b.dueDate ? -1 : (a.dueDate > b.dueDate ? 1 : 0);
+    return 0;
+  });
+}
+
+function getAlerts() {
+  return state.customers.map(enrich).filter(function (c) {
+    if (c.isPaid) return false;
+    if (c.status === "overdue" || c.status === "today") return true;
+    if (state.reminderDays > 0 && c.dd !== null && c.dd > 0 && c.dd <= state.reminderDays) return true;
+    return false;
+  });
+}
+
+function getTotalOutstanding() {
+  return state.customers.map(enrich).reduce(function (s, c) { return s + c.remaining; }, 0);
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str).replace(/[&<>"']/g, function (m) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m];
+  });
+}
+
+function badgeHtml(status, dd) {
+  var map = {
+    paid: { bg: "#DCFCE7", color: "#15803D", text: t("paidLabel") },
+    overdue: { bg: "#FEE2E2", color: "#DC2626", text: t("overdueBadge", Math.abs(dd)) },
+    today: { bg: "#FEF3C7", color: "#B45309", text: t("todayBadge") },
+    upcoming: { bg: "#DBEAFE", color: BLUE_DARK, text: dd !== null ? t("upcomingBadge", dd) : t("noDueDate") }
+  };
+  var s = map[status] || map.upcoming;
+  return '<span class="badge" style="background:' + s.bg + ';color:' + s.color + '">' + s.text + '</span>';
+}
+
+function icon(name, size, color) {
+  size = size || 16; color = color || "currentColor";
+  var icons = {
+    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>',
+    message: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
+    calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+    package: '<path d="M16.5 9.4 7.55 4.24"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.73Z"/><path d="M3.29 7 12 12l8.71-5"/><line x1="12" y1="22" x2="12" y2="12"/>',
+    check: '<polyline points="20 6 9 17 4 12"/>',
+    x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+    trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+    chevron: '<polyline points="6 9 12 15 18 9"/>',
+    bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+    alert: '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+    list: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    camera: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/>',
+    moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/>',
+    sun: '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
+    download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+    globe: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'
+  };
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (icons[name] || "") + '</svg>';
+}
+
+function logoHtml(size) {
+  return '<div class="app-logo" style="width:' + size + 'px;height:' + size + 'px">' + icon("package", Math.round(size*0.55), "#fff") + '</div>';
+}
+
+function avatarHtml(c) {
+  if (c.photo) return '<img class="avatar" src="' + c.photo + '"/>';
+  var letter = c.name ? c.name.charAt(0).toUpperCase() : "?";
+  return '<div class="avatar-fallback">' + letter + '</div>';
+}
+
+function renderBottomNav() {
+  var html = '<div class="bottom-nav">';
+  html += '<button class="nav-item ' + (state.view === "list" ? "active" : "") + '" data-action="go-list">' + icon("list", 19) + '<span>' + t("navList") + '</span></button>';
+  html += '<button class="nav-fab" data-action="open-form">' + icon("plus", 22, "#fff") + '</button>';
+  html += '<button class="nav-item ' + (state.view === "settings" ? "active" : "") + '" data-action="go-settings">' + icon("settings", 19) + '<span>' + t("navSettings") + '</span></button>';
+  html += '</div>';
+  return html;
+}
+
+function renderSettingsView() {
+  var html = '<div class="list" style="padding-top:14px">';
+
+  html += '<div class="settings-row">';
+  html += '<div style="display:flex;align-items:center;gap:10px">' + icon("globe", 18, "var(--text)") + '<span style="font-size:14px;font-weight:600;color:var(--text)">' + t("languageLabel") + '</span></div>';
+  html += '<div class="lang-switch">';
+  html += '<button class="lang-opt ' + (state.lang === "uz" ? "active" : "") + '" data-action="set-lang" data-id="uz">UZ</button>';
+  html += '<button class="lang-opt ' + (state.lang === "ru" ? "active" : "") + '" data-action="set-lang" data-id="ru">RU</button>';
+  html += '</div>';
+  html += '</div>';
+
+  html += '<div class="settings-row">';
+  html += '<div style="display:flex;align-items:center;gap:10px">' + icon(state.theme === "dark" ? "moon" : "sun", 18, "var(--text)") + '<span style="font-size:14px;font-weight:600;color:var(--text)">' + t("nightModeLabel") + '</span></div>';
+  html += '<button class="switch ' + (state.theme === "dark" ? "on" : "") + '" data-action="toggle-theme"><span class="knob"></span></button>';
+  html += '</div>';
+
+  html += '<div class="settings-row" style="flex-direction:column;align-items:stretch;gap:8px">';
+  html += '<div style="display:flex;align-items:center;gap:10px">' + icon("bell", 18, "var(--text)") + '<span style="font-size:14px;font-weight:600;color:var(--text)">' + t("reminderLabel") + '</span></div>';
+  html += '<input class="form-input" type="number" min="0" data-input="reminderDays" value="' + state.reminderDays + '" placeholder="' + t("reminderPh") + '"/>';
+  html += '<div style="font-size:11.5px;color:var(--muted2)">' + t("reminderHint") + '</div>';
+  html += '</div>';
+
+  html += '<button class="btn add-row-btn" style="width:100%;justify-content:center;margin-top:6px" data-action="export-data">' + icon("download", 14, "#1E4FBF") + " " + t("exportBtn") + "</button>";
+  html += '<button class="btn delete-btn" style="width:100%;margin-top:10px" data-action="clear-paid">' + icon("trash", 14, "#DC2626") + " " + t("clearPaidBtn") + "</button>";
+
+  html += '<div style="margin-top:26px;text-align:center;color:var(--muted2);font-size:12px">' + t("footerLabel") + '</div>';
+  html += '</div>';
+  return html;
+}
+
+function render() {
+  if (state.loading) {
+    document.getElementById("app").innerHTML =
+      '<div class="loading-wrap"><div class="big-spinner"></div><div>' + t("loadingMsg") + '</div></div>';
+    return;
+  }
+
+  if (state.loadError) {
+    document.getElementById("app").innerHTML =
+      '<div class="loading-wrap">' + icon("alert", 28, "#DC2626") +
+      '<div style="color:#DC2626;font-weight:700;text-align:center">' + t("loadErrorTitle") + '</div>' +
+      '<div style="font-size:12.5px;text-align:center">' + escapeHtml(state.loadError) + '</div>' +
+      '<button class="btn pay-btn" style="margin-top:10px" data-action="retry-load">' + t("retryBtn") + '</button></div>';
+    return;
+  }
+
+  var totalCustomers = state.customers.length;
+  var totalDebtors = state.customers.map(enrich).filter(function (c) { return !c.isPaid; }).length;
+
+  var html = "";
+  html += '<div class="header">';
+  html += logoHtml(34);
+  html += '<div style="flex:1"><div style="font-size:20px;font-weight:800;color:var(--text)">' + (state.view === "settings" ? t("settingsTitle") : t("appName")) + '</div>';
+  if (state.view === "list") {
+    html += '<div style="font-size:12.5px;color:var(--muted);margin-top:2px">' + t("customersCount", totalCustomers) + ' &middot; ' + t("debtorsCount", totalDebtors) + '</div>';
+  }
+  html += '</div>';
+  html += '</div>';
+
+  if (state.view === "settings") {
+    html += renderSettingsView();
+    html += renderBottomNav();
+    if (state.toast) html += '<div class="toast">' + escapeHtml(state.toast) + '</div>';
+    document.getElementById("app").innerHTML = html;
+    return;
+  }
+
+  var enrichedList = getFiltered();
+  var alerts = getAlerts();
+  var totalOutstanding = getTotalOutstanding();
+
+  html += '<div class="stats-bar">';
+  html += '<div><div style="font-size:11.5px;color:rgba(255,255,255,.8);font-weight:600">' + t("totalDebtLabel") + '</div>';
+  html += '<div style="font-size:20px;font-weight:800;color:#fff;margin-top:2px">' + fmtMoney(totalOutstanding) + ' ' + t("currency") + '</div></div>';
+  html += icon("package", 26, "rgba(255,255,255,.55)");
+  html += '</div>';
+
+  if (alerts.length > 0) {
+    html += '<div class="alert-box pulse">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' + icon("bell", 16, "#DC2626") + '<span style="font-weight:700;color:var(--alert-strong);font-size:13.5px">' + t("alertTitle", alerts.length) + '</span></div>';
+    alerts.slice(0, 3).forEach(function (a) {
+      html += '<div style="font-size:12.5px;color:var(--alert-soft);padding:2px 0">' + escapeHtml(a.name) + ' &mdash; ' + fmtMoney(a.remaining) + " " + t("currency") + " " + t("alertLineSuffix", a.status, a.dd) + '</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '<div class="search-wrap">' + icon("search", 16, "var(--muted2)") + '<input data-input="search" placeholder="' + t("searchPlaceholder") + '" value="' + escapeHtml(state.search) + '"/></div>';
+
+  html += '<div class="filter-tabs">';
+  html += '<button class="filter-tab ' + (state.filter === "all" ? "active" : "") + '" data-action="set-filter" data-id="all">' + t("filterAll") + '</button>';
+  html += '<button class="filter-tab ' + (state.filter === "debt" ? "active" : "") + '" data-action="set-filter" data-id="debt">' + t("filterDebt") + '</button>';
+  html += '<button class="filter-tab ' + (state.filter === "paid" ? "active" : "") + '" data-action="set-filter" data-id="paid">' + t("filterPaid") + '</button>';
+  html += '</div>';
+
+  html += '<div class="list">';
+  if (enrichedList.length === 0) {
+    html += '<div class="empty">' + (state.customers.length === 0 ? t("emptyMsg") : t("emptyFiltered")) + '</div>';
+  }
+  enrichedList.forEach(function (c) {
+    html += '<div class="card ' + (c.isPaid ? "paid" : "") + '">';
+    html += '<div style="display:flex;align-items:center;gap:10px;cursor:pointer" data-action="toggle-expand" data-id="' + c.id + '">';
+    html += avatarHtml(c);
+    html += '<div style="flex:1;min-width:0">';
+    html += '<div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;font-size:15px;color:var(--text)">' + escapeHtml(c.name) + '</span>' + badgeHtml(c.status, c.dd) + '</div>';
+    html += '<div style="font-size:12.5px;color:var(--muted);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap">';
+    if (c.phone) html += '<span style="display:flex;align-items:center;gap:3px">' + icon("phone", 11) + " " + escapeHtml(c.phone) + '</span>';
+    if (c.dueDate) html += '<span style="display:flex;align-items:center;gap:3px">' + icon("calendar", 11) + " " + fmtDate(c.dueDate) + '</span>';
+    html += '</div></div>';
+    html += '<div style="text-align:right"><div style="font-weight:800;font-size:15px;color:' + (c.isPaid ? "#16A34A" : "var(--text)") + '">' + (c.isPaid ? t("paidLabel") : fmtMoney(c.remaining) + " " + t("currency")) + '</div>';
+    if (!c.isPaid && c.paid > 0) html += '<div style="font-size:11px;color:var(--muted2)">' + t("paidAmountLabel", c.paid) + '</div>';
+    html += '</div>';
+    html += '<div class="chevron" style="transform:' + (state.expandedId === c.id ? "rotate(180deg)" : "rotate(0deg)") + '">' + icon("chevron", 16, "var(--muted2)") + '</div>';
+    html += '</div>';
+
+    if (state.expandedId === c.id) {
+      html += '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--divider)">';
+
+      if (c.phone) {
+        html += '<div class="quick-actions" style="margin-bottom:12px">';
+        html += '<a class="quick-action" title="' + t("callTitle") + '" href="tel:' + escapeHtml(c.phone) + '">' + icon("phone", 14) + '</a>';
+        if (!c.isPaid) {
+          var smsBody = encodeURIComponent(t("smsTemplate", c.name, c.remaining));
+          html += '<a class="quick-action" title="' + t("messageTitle") + '" href="sms:' + escapeHtml(c.phone) + '?body=' + smsBody + '">' + icon("message", 14) + '</a>';
+        }
+        html += '</div>';
+      }
+
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">' + icon("package", 13, "var(--muted)") + '<span style="font-size:12.5px;font-weight:700;color:var(--muted)">' + t("purchasedItemsLabel") + '</span></div>';
+      c.items.forEach(function (it) {
+        html += '<div class="item-row"><span style="color:var(--text)">' + escapeHtml(it.name) + ' <span style="color:var(--muted2)">&times; ' + it.qty + '</span></span><span style="color:var(--text);font-weight:600">' + fmtMoney(it.price * it.qty) + " " + t("currency") + '</span></div>';
+      });
+      html += '<div class="item-row" style="border-top:1px solid var(--divider);margin-top:4px;padding-top:6px"><span style="font-weight:700;color:var(--text)">' + t("totalLabel") + '</span><span style="font-weight:700;color:var(--text)">' + fmtMoney(c.total) + " " + t("currency") + '</span></div>';
+
+      if ((c.payments || []).length > 0) {
+        html += '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--divider)">';
+        html += '<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px">' + t("paymentHistoryLabel") + '</div>';
+        c.payments.slice().reverse().forEach(function (p) {
+          html += '<div class="payment-row"><span>' + fmtDate(p.date) + '</span><span style="color:#16A34A;font-weight:700">+' + fmtMoney(p.amount) + " " + t("currency") + '</span></div>';
+        });
+        html += '</div>';
+      }
+
+      if (!c.isPaid) {
+        html += '<div style="margin-top:12px">';
+        if (state.payingId === c.id) {
+          html += '<div style="display:flex;gap:8px">';
+          html += '<input class="form-input" style="margin-bottom:0" type="number" placeholder="' + t("amountPlaceholder") + '" data-input="payAmount" value="' + escapeHtml(state.payAmount) + '"/>';
+          html += '<button class="btn small-blue" data-action="submit-payment" data-id="' + c.id + '" ' + (state.saving ? "disabled" : "") + '>' + (state.saving ? '<span class="spinner"></span>' : icon("check", 15, "#fff")) + '</button>';
+          html += '<button class="btn small-gray" data-action="cancel-payment">' + icon("x", 15, "var(--muted)") + '</button>';
+          html += '</div>';
+        } else {
+          html += '<div style="display:flex;gap:8px">';
+          html += '<button class="btn pay-btn" data-action="start-payment" data-id="' + c.id + '">' + t("acceptPaymentBtn") + '</button>';
+          html += '<button class="btn delete-btn" data-action="remove-customer" data-id="' + c.id + '">' + icon("trash", 15, "#DC2626") + '</button>';
+          html += '</div>';
+        }
+        html += '</div>';
+      } else {
+        html += '<button class="btn delete-btn" style="margin-top:12px" data-action="remove-customer" data-id="' + c.id + '">' + icon("trash", 14, "#DC2626") + " " + t("deleteBtn") + "</button>";
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += renderBottomNav();
+
+  if (state.showForm) {
+    var formTotal = state.formItems.reduce(function (s, it) { return s + (Number(it.price) || 0) * (Number(it.qty) || 0); }, 0);
+    html += '<div class="overlay" data-action="close-form-overlay">';
+    html += '<div class="modal modal-wrap" data-stop="1">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+    html += '<span style="font-weight:800;font-size:17px;color:var(--text)">' + t("newDebtTitle") + '</span>';
+    html += '<button style="background:none;border:none;cursor:pointer" data-action="close-form">' + icon("x", 20, "var(--muted)") + '</button>';
+    html += '</div>';
+    html += '<div class="form-scroll">';
+
+    html += '<label class="label">' + t("customerPhotoLabel") + '</label>';
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+    if (state.fPhoto) {
+      html += '<img src="' + state.fPhoto + '" style="width:52px;height:52px;border-radius:12px;object-fit:cover;border:1px solid var(--input-border)"/>';
+    } else {
+      html += '<div style="width:52px;height:52px;border-radius:12px;background:var(--search-bg);display:flex;align-items:center;justify-content:center;color:var(--muted2)">' + icon("camera", 20) + '</div>';
+    }
+    html += '<button type="button" class="btn add-row-btn photo-picker-label" style="margin-top:0" data-action="open-camera">' + icon("camera", 13, "#1E4FBF") + ' <span>Kamera</span></button>';
+    html += '<label class="btn add-row-btn photo-picker-label" style="margin-top:0">' + icon("image", 13, "#1E4FBF") + ' <span>Galereya</span><input type="file" accept="image/*" id="photo-input" style="display:none"/></label>';
+    html += '<input type="file" id="camera-input" accept="image/*" style="display:none">';
+    if (state.fPhoto) html += '<button data-action="remove-photo" style="background:none;border:none;cursor:pointer">' + icon("x", 16, "var(--muted2)") + '</button>';
+    html += '</div>';
+
+    html += '<label class="label">' + t("customerNameLabel") + '</label><input class="form-input" data-input="fName" placeholder="' + t("namePlaceholder") + '" value="' + escapeHtml(state.fName) + '"/>';
+    html += '<label class="label">' + t("phoneLabel") + '</label><input class="form-input" data-input="fPhone" placeholder="+998 90 123 45 67" value="' + escapeHtml(state.fPhone) + '"/>';
+    html += '<label class="label">' + t("duedateLabel") + '</label><input class="form-input" type="date" data-input="fDue" value="' + escapeHtml(state.fDue) + '"/>';
+    html += '<label class="label">' + t("itemsLabel") + '</label>';
+    state.formItems.forEach(function (it) {
+      html += '<div style="display:flex;gap:6px;margin-bottom:6px">';
+      html += '<input class="form-input" style="flex:2;margin-bottom:0" placeholder="' + t("itemNamePh") + '" data-input="itemName" data-id="' + it.id + '" value="' + escapeHtml(it.name) + '"/>';
+      html += '<input class="form-input" style="flex:1.3;margin-bottom:0" type="number" placeholder="' + t("pricePh") + '" data-input="itemPrice" data-id="' + it.id + '" value="' + escapeHtml(it.price) + '"/>';
+      html += '<input class="form-input" style="flex:0.8;margin-bottom:0" type="number" placeholder="' + t("qtyPh") + '" data-input="itemQty" data-id="' + it.id + '" value="' + escapeHtml(it.qty) + '"/>';
+      html += '<button style="background:none;border:none;cursor:pointer;padding:0 2px" data-action="remove-item-row" data-id="' + it.id + '">' + icon("x", 16, "var(--muted2)") + '</button>';
+      html += '</div>';
+    });
+    html += '<button class="btn add-row-btn" data-action="add-item-row">' + icon("plus", 13, "#1E4FBF") + " " + t("addItemBtn") + "</button>";
+    html += '<div class="total-box"><span style="color:var(--muted);font-size:13.5px">' + t("totalSumLabel") + '</span><span class="form-total-value" style="font-weight:800;font-size:17px;color:' + BLUE + '">' + fmtMoney(formTotal) + " " + t("currency") + '</span></div>';
+    html += '</div>';
+    html += '<button class="btn submit-btn" data-action="submit-form" ' + (state.saving ? "disabled" : "") + '>' + (state.saving ? '<span class="spinner"></span> ' + t("savingBtn") : t("saveDebtBtn")) + '</button>';
+    html += '</div></div>';
+  }
+
+  if (state.toast) {
+    html += '<div class="toast">' + escapeHtml(state.toast) + '</div>';
+  }
+
+  document.getElementById("app").innerHTML = html;
+  syncTelegramUI();
+}
+
+// ---- actions ----
+function goList() { state.view = "list"; render(); }
+function goSettings() { state.view = "settings"; render(); }
+
+function toggleTheme() {
+  state.theme = state.theme === "dark" ? "light" : "dark";
+  localStorage.setItem("qd_theme", state.theme);
+  document.body.classList.toggle("dark", state.theme === "dark");
+  applyChromeColors();
+  render();
+}
+
+function setLang(lang) {
+  if (lang !== "uz" && lang !== "ru") return;
+  state.lang = lang;
+  localStorage.setItem("qd_lang", lang);
+  document.documentElement.setAttribute("lang", lang);
+  render();
+}
+
+function setFilter(f) { state.filter = f; render(); }
+
+function exportData() {
+  var dataStr = JSON.stringify(state.customers, null, 2);
+  var blob = new Blob([dataStr], { type: "application/json" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = "qarz-daftarcha-export.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(t("toastExported"));
+}
+
+function clearPaid() {
+  var paidIds = state.customers.map(enrich).filter(function (c) { return c.isPaid; }).map(function (c) { return c.id; });
+  if (paidIds.length === 0) { alert(t("alertNoPaid")); return; }
+  if (!confirm(t("confirmClearPaid", paidIds.length))) return;
+  state.customers = state.customers.filter(function (c) { return paidIds.indexOf(c.id) === -1; });
+  saveCustomers();
+  render();
+  showToast(t("toastCleared"));
+}
+
+function openForm() {
+  state.showForm = true;
+  state.fName = ""; state.fPhone = ""; state.fDue = ""; state.fPhoto = null;
+  state.formItems = [{ id: uid(), name: "", price: "", qty: "1" }];
+  render();
+}
+function closeForm() { if (state.saving) return; state.showForm = false; render(); }
+function addItemRow() { state.formItems.push({ id: uid(), name: "", price: "", qty: "1" }); render(); }
+function removeItemRow(id) {
+  if (state.formItems.length > 1) state.formItems = state.formItems.filter(function (r) { return r.id !== id; });
+  render();
+}
+function removePhoto() { state.fPhoto = null; render(); }
+function updateFormTotalDisplay() {
+  var formTotal = state.formItems.reduce(function (s, it) { return s + (Number(it.price) || 0) * (Number(it.qty) || 0); }, 0);
+  var el = document.querySelector(".form-total-value");
+  if (el) el.textContent = fmtMoney(formTotal) + " " + t("currency");
+}
+
+function submitForm() {
+  var name = (state.fName || "").trim();
+  if (!name) { alert(t("alertNoName")); return; }
+  var cleanItems = state.formItems
+    .filter(function (it) { return it.name.trim() && Number(it.price) > 0; })
+    .map(function (it) { return { id: it.id, name: it.name.trim(), price: Number(it.price), qty: Number(it.qty) || 1 }; });
+  if (cleanItems.length === 0) { alert(t("alertNoItems")); return; }
+
+  var newCustomer = {
+    id: uid(),
+    name: name,
+    phone: (state.fPhone || "").trim(),
+    dueDate: state.fDue || null,
+    photo: state.fPhoto || null,
+    items: cleanItems,
+    payments: []
+  };
+
+  state.customers.unshift(newCustomer);
+  saveCustomers();
+  state.showForm = false;
+  render();
+  showToast(t("toastAdded"));
+}
+
+function toggleExpand(id) { state.expandedId = state.expandedId === id ? null : id; render(); }
+
+function removeCustomer(id) {
+  if (!confirm(t("confirmDeleteMsg"))) return;
+  state.customers = state.customers.filter(function (c) { return c.id !== id; });
+  saveCustomers();
+  render();
+  showToast(t("toastDeleted"));
+}
+
+function startPayment(id) { state.payingId = id; state.payAmount = ""; render(); }
+function cancelPayment() { if (state.saving) return; state.payingId = null; state.payAmount = ""; render(); }
+
+function submitPayment(id) {
+  var amt = Number(state.payAmount);
+  if (!amt || amt <= 0) { alert(t("alertBadAmount")); return; }
+  var c = state.customers.find(function (c) { return c.id === id; });
+  if (!c) return;
+
+  c.payments = (c.payments || []).concat([{ id: uid(), amount: amt, date: todayStr() }]);
+  saveCustomers();
+  state.payingId = null; state.payAmount = "";
+  render();
+  showToast(t("toastPaymentAccepted"));
+}
+
+document.addEventListener("click", function (e) {
+  var actionEl = e.target.closest("[data-action]");
+  if (!actionEl) return;
+  var action = actionEl.getAttribute("data-action");
+  var id = actionEl.getAttribute("data-id");
+
+  if (action === "close-form-overlay") {
+    if (e.target === actionEl) closeForm();
+    return;
+  }
+
+  switch (action) {
+    case "go-list": goList(); break;
+    case "go-settings": goSettings(); break;
+    case "toggle-theme": toggleTheme(); break;
+    case "set-lang": setLang(id); break;
+    case "set-filter": setFilter(id); break;
+    case "export-data": exportData(); break;
+    case "clear-paid": clearPaid(); break;
+    case "open-form": openForm(); break;
+    case "close-form": closeForm(); break;
+    case "add-item-row": addItemRow(); break;
+    case "remove-item-row": removeItemRow(id); break;
+    case "remove-photo": removePhoto(); break;
+    case "open-camera": openCameraInput(); break;
+    case "toggle-expand": toggleExpand(id); break;
+    case "start-payment": startPayment(id); break;
+    case "cancel-payment": cancelPayment(); break;
+    case "submit-payment": submitPayment(id); break;
+    case "remove-customer": removeCustomer(id); break;
+    case "submit-form": submitForm(); break;
+    case "install-app": installApp(); break;
+    case "retry-load": loadCustomers(); break;
+  }
+});
+
+document.addEventListener("input", function (e) {
+  var el = e.target;
+  var field = el.getAttribute("data-input");
+  if (!field) return;
+  var id = el.getAttribute("data-id");
+
+  if (field === "search") { state.search = el.value; render(); return; }
+  if (field === "fName") { state.fName = el.value; return; }
+  if (field === "fPhone") { state.fPhone = el.value; return; }
+  if (field === "fDue") { state.fDue = el.value; return; }
+  if (field === "payAmount") { state.payAmount = el.value; return; }
+  if (field === "reminderDays") {
+    state.reminderDays = Math.max(0, Number(el.value) || 0);
+    localStorage.setItem("qd_reminderDays", state.reminderDays);
+    return;
+  }
+  if (field === "itemName" || field === "itemPrice" || field === "itemQty") {
+    var row = state.formItems.find(function (r) { return r.id === id; });
+    if (!row) return;
+    if (field === "itemName") row.name = el.value;
+    if (field === "itemPrice") { row.price = el.value; updateFormTotalDisplay(); }
+    if (field === "itemQty") { row.qty = el.value; updateFormTotalDisplay(); }
+  }
+});
+
+// ---- Direct camera capture (Chrome Android) ----
+function openCameraInput() {
+  var input = document.getElementById("camera-input");
+  if (!input) return;
+  input.value = "";
+  input.click();
+}
+
+// The camera input returns a normal File after the user takes a photo.
+document.addEventListener("change", function (e) {
+  var el = e.target;
+  if (el.id !== "camera-input") return;
+  var file = el.files && el.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function (ev) {
+    var img = new Image();
+    img.onload = function () {
+      try {
+        var maxW = 480;
+        var scale = Math.min(1, maxW / img.width);
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        state.fPhoto = canvas.toDataURL("image/jpeg", 0.65);
+        render();
+      } catch (err) {
+        showToast(t("toastPhotoError"));
+      }
+    };
+    img.onerror = function () { showToast(t("toastPhotoError")); };
+    img.src = ev.target.result;
+  };
+  reader.onerror = function () { showToast(t("toastPhotoError")); };
+  reader.readAsDataURL(file);
+  el.value = "";
+});
+
+// ---- PWA install ----
+window.addEventListener("beforeinstallprompt", function (e) {
+  e.preventDefault();
+  state.deferredPrompt = e;
+  state.showInstallBanner = true;
+});
+function installApp() {
+  if (!state.deferredPrompt) return;
+  state.deferredPrompt.prompt();
+  state.deferredPrompt.userChoice.finally(function () {
+    state.deferredPrompt = null;
+    state.showInstallBanner = false;
+    render();
+  });
+}
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  });
+}
+
+document.documentElement.setAttribute("lang", state.lang);
+loadCustomers();
+</script>
+</body>
+</html>
