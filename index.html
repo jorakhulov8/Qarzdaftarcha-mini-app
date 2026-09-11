@@ -81,12 +81,10 @@
   .chevron { transition: transform .2s ease; }
   input, select { transition: border-color .15s ease, box-shadow .15s ease; font-family: inherit; }
   input:focus { outline:none; border-color:#2F6FED; box-shadow:0 0 0 3px rgba(47,111,237,.15); }
-  .hole { width:7px; height:7px; border-radius:50%; background:var(--divider); }
   .spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation: spin .7s linear infinite; display:inline-block; }
 
   .header { display:flex; align-items:center; gap:10px; padding:18px 14px 12px; border-bottom:1px solid var(--card-border); }
   .app-logo { width:34px; height:34px; border-radius:10px; flex-shrink:0; background:linear-gradient(135deg,#3A6EED,#1747B0); display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(47,111,237,.35); }
-  .spiral { display:flex; flex-direction:column; gap:3px; }
   .alert-box { margin:10px 14px 0; background:var(--alert-bg); border:1px solid var(--alert-border); border-radius:14px; padding:10px 12px; }
   .stats-bar { margin:12px 14px 0; background:linear-gradient(135deg,#2F6FED,#1E4FBF); border-radius:16px; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 6px 18px rgba(47,111,237,.25); }
   .search-wrap { display:flex; align-items:center; gap:8px; margin:14px 14px 10px; background:var(--search-bg); border:1px solid var(--input-border); border-radius:12px; padding:9px 12px; }
@@ -138,16 +136,11 @@
   .switch.on { background:#2F6FED; }
   .switch .knob { position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:left .2s ease; box-shadow:0 1px 3px rgba(0,0,0,.2); }
   .switch.on .knob { left:21px; }
-  .photo-picker-label { display:flex; align-items:center; gap:5px; }
+  .photo-picker-label { display:inline-flex; align-items:center; gap:6px; cursor:pointer; }
   .lang-switch { display:flex; background:var(--search-bg); border-radius:10px; padding:3px; gap:3px; }
   .lang-opt { padding:6px 14px; border-radius:8px; font-size:12.5px; font-weight:700; color:var(--muted); background:none; border:none; cursor:pointer; }
   .lang-opt.active { background:#2F6FED; color:#fff; }
   .payment-row { display:flex; justify-content:space-between; font-size:12.5px; padding:3px 0; color:var(--muted); }
-  .camera-modal { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.92); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px; }
-  .camera-video { width:min(100%,520px); max-height:70vh; object-fit:cover; border-radius:16px; background:#111; }
-  .camera-actions { display:flex; gap:10px; margin-top:14px; }
-  .camera-actions button { min-width:120px; }
-
 </style>
 </head>
 <body>
@@ -156,9 +149,7 @@
 <script>
 "use strict";
 
-// ---- Local storage (on-device) ----
 var STORE_KEY = "qarzDaftarchaCustomers";
-
 var BLUE = "#2F6FED", BLUE_DARK = "#1E4FBF";
 
 var state = {
@@ -181,14 +172,11 @@ var state = {
   fPhone: "",
   fDue: "",
   fPhoto: null,
-  formItems: [],
-  deferredPrompt: null,
-  showInstallBanner: false
+  formItems: []
 };
 
 document.body.classList.toggle("dark", state.theme === "dark");
 
-// ---- Telegram Mini App integration ----
 var tg = window.Telegram && window.Telegram.WebApp;
 
 function applyChromeColors() {
@@ -212,11 +200,9 @@ function applySafeArea() {
 
 function syncTelegramUI() {
   if (!tg) return;
-  // Back button: shown whenever the user is somewhere other than the main list
   var showBack = state.view === "settings" || state.showForm || state.payingId;
   if (showBack) tg.BackButton.show(); else tg.BackButton.hide();
 
-  // Main button: quick "add debt" on the list view, becomes "Save" while the form is open
   if (state.showForm) {
     tg.MainButton.setParams({
       text: state.saving ? t("savingBtn") : t("saveDebtBtn"),
@@ -258,7 +244,6 @@ function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toS
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 function fmtMoney(n) { return new Intl.NumberFormat("uz-UZ").format(Math.round(n || 0)); }
 
-// ---- i18n ----
 var LANG = {
   uz: {
     appName: "Qarz Daftarcha", settingsTitle: "Sozlamalar",
@@ -690,9 +675,10 @@ function render() {
     } else {
       html += '<div style="width:52px;height:52px;border-radius:12px;background:var(--search-bg);display:flex;align-items:center;justify-content:center;color:var(--muted2)">' + icon("camera", 20) + '</div>';
     }
-    html += '<button type="button" class="btn add-row-btn photo-picker-label" style="margin-top:0" data-action="open-camera">' + icon("camera", 13, "#1E4FBF") + ' <span>Kamera</span></button>';
-    html += '<label class="btn add-row-btn photo-picker-label" style="margin-top:0">' + icon("image", 13, "#1E4FBF") + ' <span>Galereya</span><input type="file" accept="image/*" id="photo-input" style="display:none"/></label>';
-    html += '<input type="file" id="camera-input" accept="image/*" style="display:none">';
+    html += '<label class="btn add-row-btn photo-picker-label" style="margin-top:0">';
+    html += icon("camera", 14, "#1E4FBF") + ' <span>' + t("takePhotoBtn") + '</span>';
+    html += '<input type="file" accept="image/*" id="photo-input" style="display:none"/>';
+    html += '</label>';
     if (state.fPhoto) html += '<button data-action="remove-photo" style="background:none;border:none;cursor:pointer">' + icon("x", 16, "var(--muted2)") + '</button>';
     html += '</div>';
 
@@ -723,7 +709,6 @@ function render() {
   syncTelegramUI();
 }
 
-// ---- actions ----
 function goList() { state.view = "list"; render(); }
 function goSettings() { state.view = "settings"; render(); }
 
@@ -863,14 +848,12 @@ document.addEventListener("click", function (e) {
     case "add-item-row": addItemRow(); break;
     case "remove-item-row": removeItemRow(id); break;
     case "remove-photo": removePhoto(); break;
-    case "open-camera": openCameraInput(); break;
     case "toggle-expand": toggleExpand(id); break;
     case "start-payment": startPayment(id); break;
     case "cancel-payment": cancelPayment(); break;
     case "submit-payment": submitPayment(id); break;
     case "remove-customer": removeCustomer(id); break;
     case "submit-form": submitForm(); break;
-    case "install-app": installApp(); break;
     case "retry-load": loadCustomers(); break;
   }
 });
@@ -900,18 +883,9 @@ document.addEventListener("input", function (e) {
   }
 });
 
-// ---- Direct camera capture (Chrome Android) ----
-function openCameraInput() {
-  var input = document.getElementById("camera-input");
-  if (!input) return;
-  input.value = "";
-  input.click();
-}
-
-// The camera input returns a normal File after the user takes a photo.
 document.addEventListener("change", function (e) {
   var el = e.target;
-  if (el.id !== "camera-input") return;
+  if (el.id !== "photo-input") return;
   var file = el.files && el.files[0];
   if (!file) return;
   var reader = new FileReader();
@@ -940,21 +914,6 @@ document.addEventListener("change", function (e) {
   el.value = "";
 });
 
-// ---- PWA install ----
-window.addEventListener("beforeinstallprompt", function (e) {
-  e.preventDefault();
-  state.deferredPrompt = e;
-  state.showInstallBanner = true;
-});
-function installApp() {
-  if (!state.deferredPrompt) return;
-  state.deferredPrompt.prompt();
-  state.deferredPrompt.userChoice.finally(function () {
-    state.deferredPrompt = null;
-    state.showInstallBanner = false;
-    render();
-  });
-}
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function () {
     navigator.serviceWorker.register("sw.js").catch(function () {});
